@@ -1,3 +1,4 @@
+cat > /home/claude/AppLock/app/src/main/java/com/example/applock/AppLockAccessibilityService.kt << 'EOF'
 package com.example.applock
 
 import android.accessibilityservice.AccessibilityService
@@ -11,6 +12,10 @@ import android.view.accessibility.AccessibilityEvent
  * content/text from other apps) and shows the lock challenge when a
  * locked app comes to the front — whether opened from the home screen,
  * Recents, or a notification.
+ *
+ * An app is considered "unlocked" only while it stays the foreground app.
+ * The instant the user leaves it, its unlock is forgotten, so coming back
+ * always asks for the credential again.
  */
 class AppLockAccessibilityService : AccessibilityService() {
 
@@ -25,12 +30,22 @@ class AppLockAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         val pkg = event?.packageName?.toString() ?: return
         if (pkg == lastForegroundPackage) return
+
+        // Leaving a previously-unlocked locked app forgets its unlock,
+        // so re-entering it always challenges again.
+        val previous = lastForegroundPackage
+        if (previous != null && previous != pkg) {
+            if (!::security.isInitialized) security = SecurityManager(this)
+            if (security.isLocked(previous)) {
+                SessionUnlockState.forget(previous)
+            }
+        }
+
         lastForegroundPackage = pkg
 
         if (!::security.isInitialized) security = SecurityManager(this)
 
-        // Our own app's screens (list, settings, the lock screen itself) are
-        // gated separately by MainActivity's self-lock check — don't loop.
+        // Our own app's screens are gated separately by MainActivity's self-lock check.
         if (pkg == packageName) return
 
         if (security.isLocked(pkg) && !SessionUnlockState.isUnlocked(pkg)) {
@@ -50,3 +65,5 @@ class AppLockAccessibilityService : AccessibilityService() {
 
     override fun onInterrupt() {}
 }
+EOF
+echo done
