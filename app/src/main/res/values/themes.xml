@@ -1,0 +1,11 @@
+<resources>
+    <style name="Theme.AppLock" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowBackground">@color/background_dark</item>
+        <item name="colorPrimary">@color/accent</item>
+    </style>
+
+    <style name="Theme.AppLock.Lock" parent="Theme.AppLock">
+        <item name="android:windowIsTranslucent">false</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+</resources>
