@@ -1,31 +1,29 @@
+cat > /home/claude/AppLock/app/src/main/java/com/example/applock/SessionUnlockState.kt << 'EOF'
 package com.example.applock
 
 /**
- * Tracks which locked packages have already been unlocked in the current
- * "session" so the user isn't re-prompted every time they briefly switch
- * away and back. Cleared automatically after a short timeout or when the
- * app is force-stopped/re-locked from Settings.
+ * Tracks which locked packages are currently unlocked. An app stays
+ * unlocked only while it remains the foreground app — the moment the
+ * user switches away from it (home, recents, another app), the
+ * AccessibilityService forgets its unlock, so returning to it always
+ * asks for the credential again.
  */
 object SessionUnlockState {
-    private val unlockedAt = mutableMapOf<String, Long>()
+    private val unlocked = mutableSetOf<String>()
 
-    /** How long an unlock stays valid before the app is challenged again. */
-    private const val SESSION_MS = 60_000L
-
-    fun isUnlocked(packageName: String): Boolean {
-        val ts = unlockedAt[packageName] ?: return false
-        return System.currentTimeMillis() - ts < SESSION_MS
-    }
+    fun isUnlocked(packageName: String): Boolean = unlocked.contains(packageName)
 
     fun markUnlocked(packageName: String) {
-        unlockedAt[packageName] = System.currentTimeMillis()
+        unlocked.add(packageName)
     }
 
     fun forget(packageName: String) {
-        unlockedAt.remove(packageName)
+        unlocked.remove(packageName)
     }
 
     fun clearAll() {
-        unlockedAt.clear()
+        unlocked.clear()
     }
 }
+EOF
+echo done
